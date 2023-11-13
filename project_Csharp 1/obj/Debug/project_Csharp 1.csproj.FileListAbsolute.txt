@@ -1,0 +1,7 @@
+C:\Users\samia\Desktop\MY PROJECTS\C Sharp Projects\project_Csharp 1\project_Csharp 1\bin\Debug\project_Csharp 1.exe.config
+C:\Users\samia\Desktop\MY PROJECTS\C Sharp Projects\project_Csharp 1\project_Csharp 1\bin\Debug\project_Csharp 1.exe
+C:\Users\samia\Desktop\MY PROJECTS\C Sharp Projects\project_Csharp 1\project_Csharp 1\bin\Debug\project_Csharp 1.pdb
+C:\Users\samia\Desktop\MY PROJECTS\C Sharp Projects\project_Csharp 1\project_Csharp 1\obj\Debug\project_Csharp 1.csproj.AssemblyReference.cache
+C:\Users\samia\Desktop\MY PROJECTS\C Sharp Projects\project_Csharp 1\project_Csharp 1\obj\Debug\project_Csharp 1.csproj.CoreCompileInputs.cache
+C:\Users\samia\Desktop\MY PROJECTS\C Sharp Projects\project_Csharp 1\project_Csharp 1\obj\Debug\project_Csharp 1.exe
+C:\Users\samia\Desktop\MY PROJECTS\C Sharp Projects\project_Csharp 1\project_Csharp 1\obj\Debug\project_Csharp 1.pdb

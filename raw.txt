@@ -1,0 +1,1349 @@
+using System;
+using System.Security.Cryptography;
+using System.Text;
+using System.Linq;
+
+namespace project_Csharp_1
+{
+    public class UserNotFoundException : Exception
+    {
+        public UserNotFoundException(string message) : base(message) { }
+    }
+
+    public class UserAccount
+    {
+        public int UserId { get; set; }
+        public string Username { get; set; }
+        private string PasswordHash { get; set; }
+        public string Email { get; set; }
+        public DateTime RegistrationDate { get; set; }
+
+        // Array to simulate database context
+        private static UserAccount[] userAccounts = new UserAccount[10];
+        private static int userCount = 0;
+
+        // Constructor
+        public UserAccount() { }
+
+        // Hash Password
+        private string HashPassword(string password)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                return BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
+            }
+        }
+
+        // Register User
+        public void Register(string username, string email, string password)
+        {
+            if (userCount >= userAccounts.Length)
+            {
+                // Resize the array if limit is reached
+                Array.Resize(ref userAccounts, userAccounts.Length * 2);
+            }
+
+            var user = new UserAccount
+            {
+                UserId = userCount + 1,
+                Username = username,
+                PasswordHash = HashPassword(password),
+                Email = email,
+                RegistrationDate = DateTime.Now
+            };
+
+            userAccounts[userCount++] = user;
+        }
+
+        // Login User
+        public bool Login(string username, string password)
+        {
+            for (int i = 0; i < userCount; i++)
+            {
+                if (userAccounts[i].Username == username)
+                {
+                    return userAccounts[i].PasswordHash == HashPassword(password);
+                }
+            }
+
+            throw new UserNotFoundException("User not found.");
+        }
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace project_Csharp_1
+{
+    public class Transaction
+    {
+        public int TransactionId { get; set; }
+        public int UserId { get; set; }
+        public decimal Amount { get; set; }
+        public DateTime Date { get; set; }
+        public string Description { get; set; }
+    }
+
+    public class TransactionHistory
+    {
+        private readonly int UserId;
+        private Transaction[] transactions;
+        private int transactionCount;
+
+        public TransactionHistory(int userId)
+        {
+            UserId = userId;
+            transactions = new Transaction[10]; // Initial size of 10, can be adjusted
+            transactionCount = 0;
+        }
+
+        public void DisplayTransactionHistory()
+        {
+            Console.WriteLine("Transaction History for User " + UserId);
+            Console.WriteLine("-----------------------------------");
+
+            if (transactionCount == 0)
+            {
+                Console.WriteLine("No transaction records found.");
+            }
+            else
+            {
+                Console.WriteLine("Transaction Records:");
+                foreach (var transaction in transactions.Take(transactionCount))
+                {
+                    Console.WriteLine($"Transaction ID: {transaction.TransactionId}, Amount: ${transaction.Amount}, Date: {transaction.Date.ToShortDateString()}, Description: {transaction.Description}");
+                }
+            }
+        }
+
+        public void AddTransaction(decimal amount, string description)
+        {
+            if (transactionCount == transactions.Length)
+            {
+                IncreaseArraySize();
+            }
+
+            var transaction = new Transaction
+            {
+                TransactionId = transactionCount + 1,
+                UserId = UserId,
+                Amount = amount,
+                Date = DateTime.Now,
+                Description = description
+            };
+
+            transactions[transactionCount++] = transaction;
+            Console.WriteLine("Transaction added successfully.");
+        }
+
+        private void IncreaseArraySize()
+        {
+            Transaction[] newTransactions = new Transaction[transactions.Length * 2];
+            Array.Copy(transactions, newTransactions, transactions.Length);
+            transactions = newTransactions;
+        }
+    }
+    }
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+
+namespace project_Csharp_1
+{
+    
+
+    public class ReportsAndAnalytics
+    {
+        private readonly int UserId;
+        private readonly IncomeManagement IncomeManager; // Corrected type
+        private readonly Expense ExpenseManager; // Ensure this is correct
+        private readonly FinancialGoalManager GoalManager;
+
+        public ReportsAndAnalytics(int userId, IncomeManagement incomeManager, Expense expenseManager, FinancialGoalManager goalManager)
+        {
+            UserId = userId;
+            IncomeManager = incomeManager;
+            ExpenseManager = expenseManager;
+            GoalManager = goalManager;
+        }
+
+        public void DisplayIncomeReport()
+        {
+            Console.WriteLine("Income Report for User " + UserId);
+            Console.WriteLine("-----------------------------------");
+
+            var incomeRecords = IncomeManager.GetIncomeRecordsByUser();
+
+            if (incomeRecords.Length == 0)
+            {
+                Console.WriteLine("No income records found.");
+            }
+            else
+            {
+                Console.WriteLine("Income Records:");
+                foreach (var record in incomeRecords)
+                {
+                    // Updated to reflect the properties available in the Income class
+                    Console.WriteLine($"Source: {record.Source}, Amount: ${record.Amount}, Date: {record.Date.ToShortDateString()}");
+                }
+
+                decimal totalIncome = incomeRecords.Sum(record => record.Amount);
+                Console.WriteLine($"Total Income: ${totalIncome}");
+            }
+        }
+
+
+        public void DisplayExpenseReport()
+        {
+            Console.WriteLine("Expense Report for User " + UserId);
+            Console.WriteLine("-----------------------------------");
+
+            var expenseRecords = Expense.GetExpenseRecordsByUser(UserId);
+
+            if (expenseRecords.Length == 0)
+            {
+                Console.WriteLine("No expense records found.");
+            }
+            else
+            {
+                Console.WriteLine("Expense Records:");
+                foreach (var record in expenseRecords)
+                {
+                    Console.WriteLine($"Expense ID: {record.ExpenseId}, Category: {record.Category}, Amount: ${record.Amount}, Date: {record.Date.ToShortDateString()}");
+                }
+
+                decimal totalExpenses = expenseRecords.Sum(record => record.Amount);
+                Console.WriteLine($"Total Expenses: ${totalExpenses}");
+            }
+        }
+
+        public void DisplayFinancialGoalProgress()
+        {
+            Console.WriteLine("Financial Goal Progress for User " + UserId);
+            Console.WriteLine("-----------------------------------");
+
+            var goals = GoalManager.GetFinancialGoalsByUser(UserId);
+
+            if (goals.Length == 0)
+            {
+                Console.WriteLine("No financial goals found.");
+            }
+            else
+            {
+                Console.WriteLine("Financial Goals:");
+                foreach (var goal in goals)
+                {
+                    decimal progressPercentage = (goal.CurrentAmount / goal.TargetAmount) * 100;
+                    string status = goal.IsCompleted ? "Completed" : "In Progress";
+
+                    Console.WriteLine($"Goal ID: {goal.GoalId}, Name: {goal.Name}, Target Amount: ${goal.TargetAmount}, Current Amount: ${goal.CurrentAmount}, Target Date: {goal.TargetDate.ToShortDateString()}, Status: {status}, Progress: {progressPercentage}%");
+                }
+            }
+        }
+
+        public void GenerateAnalytics()
+        {
+            Console.WriteLine("Generating Financial Analytics for User " + UserId);
+            Console.WriteLine("-----------------------------------");
+
+            decimal totalIncome = IncomeManager.GetTotalIncomeByUser();
+
+            decimal totalExpenses = Expense.GetTotalExpensesByUser(UserId);
+            decimal savingsRate = CalculateSavingsRate(totalIncome, totalExpenses);
+
+            Console.WriteLine($"Total Income: ${totalIncome}");
+            Console.WriteLine($"Total Expenses: ${totalExpenses}");
+            Console.WriteLine($"Savings Rate: {savingsRate}%");
+
+            var expenseRecords = Expense.GetExpenseRecordsByUser(UserId);
+            GenerateExpenseCategoryBreakdown(expenseRecords);
+
+            Console.WriteLine("\nGenerating Monthly Expense Report...");
+            GenerateMonthlyExpenseReport(DateTime.Now.Year, DateTime.Now.Month);
+        }
+
+        private decimal CalculateSavingsRate(decimal totalIncome, decimal totalExpenses)
+        {
+            if (totalIncome == 0)
+            {
+                return 0; // Avoid division by zero
+            }
+
+            decimal savings = totalIncome - totalExpenses;
+            decimal savingsRate = (savings / totalIncome) * 100;
+
+            return savingsRate;
+        }
+
+        private void GenerateExpenseCategoryBreakdown(IEnumerable<Expense> expenseRecords)
+        {
+            Console.WriteLine("\nExpense Category Breakdown:");
+            Console.WriteLine("---------------------------");
+
+            var categoryGroups = expenseRecords.GroupBy(record => record.Category);
+
+            foreach (var categoryGroup in categoryGroups)
+            {
+                string category = categoryGroup.Key;
+                decimal totalExpense = categoryGroup.Sum(record => record.Amount);
+
+                Console.WriteLine($"{category}: ${totalExpense}");
+            }
+        }
+
+        public void GenerateMonthlyExpenseReport(int year, int month)
+        {
+            Console.WriteLine($"\nMonthly Expense Report for {GetMonthName(month)} {year}");
+            Console.WriteLine("-----------------------------------");
+
+            var expenseRecords = Expense.GetExpenseRecordsByUser(UserId);
+            var filteredExpenses = expenseRecords.Where(record => record.Date.Year == year && record.Date.Month == month);
+
+            decimal totalMonthlyExpense = filteredExpenses.Sum(record => record.Amount);
+
+            Console.WriteLine($"Total Monthly Expense: ${totalMonthlyExpense}");
+
+            foreach (var expense in filteredExpenses)
+            {
+                Console.WriteLine($"{expense.Date.ToShortDateString()} - {expense.Category}: ${expense.Amount}");
+            }
+        }
+
+        private string GetMonthName(int month)
+        {
+            return new DateTime(DateTime.Now.Year, month, 1).ToString("MMMM");
+        }
+    }
+
+}
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace project_Csharp_1
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // Your code to start the application goes here
+            Console.WriteLine("Hello, World!");
+            // You can create instances of Expense, Budget, etc., and call their methods for testing
+        }
+    }
+
+}
+using System;
+using System.Linq;
+
+namespace project_Csharp_1
+{
+    public class Income
+    {
+        public int UserId { get; set; }
+        public decimal Amount { get; set; }
+        public string Source { get; set; }
+        public DateTime Date { get; set; }
+    }
+
+    public class IncomeManagement
+    {
+        private readonly int UserId;
+        private Income[] incomes;
+        private int incomeCount;
+
+        public IncomeManagement(int userId)
+        {
+            UserId = userId;
+            incomes = new Income[10]; // Initial size of 10, can be adjusted
+            incomeCount = 0;
+        }
+
+        public void DisplayIncomeOverview()
+        {
+            Console.WriteLine("Income Overview for User " + UserId);
+            Console.WriteLine("-----------------------------------");
+
+            // Display user's total income
+            decimal totalIncome = CalculateTotalIncome();
+
+            Console.WriteLine("Total Income: $" + totalIncome);
+
+            // Additional income overview statistics can be added here
+        }
+
+        public void DisplayIncomeMenu()
+        {
+            Console.WriteLine("\nIncome Menu");
+            Console.WriteLine("---------------");
+            Console.WriteLine("1. Add Income");
+            Console.WriteLine("2. View Income History");
+            Console.WriteLine("3. Exit");
+
+            // Handle user input for income management
+            int choice = GetUserChoice(1, 3);
+
+            switch (choice)
+            {
+                case 1:
+                    AddIncome();
+                    break;
+                case 2:
+                    ViewIncomeHistory();
+                    break;
+                case 3:
+                    Console.WriteLine("Exiting Income Management...");
+                    break;
+            }
+        }
+
+        private void AddIncome()
+        {
+            Console.WriteLine("\nAdd Income");
+            Console.WriteLine("------------");
+
+            Console.Write("Enter Income Source: ");
+            string source = Console.ReadLine();
+
+            Console.Write("Enter Income Amount: $");
+            if (decimal.TryParse(Console.ReadLine(), out decimal amount))
+            {
+                if (incomeCount == incomes.Length)
+                {
+                    IncreaseArraySize();
+                }
+
+                var income = new Income
+                {
+                    UserId = UserId,
+                    Amount = amount,
+                    Source = source,
+                    Date = DateTime.Now
+                };
+
+                incomes[incomeCount++] = income;
+                Console.WriteLine("Income added successfully.");
+            }
+            else
+            {
+                Console.WriteLine("Invalid amount entered. Income not added.");
+            }
+        }
+
+        public Income[] GetIncomeRecordsByUser()
+        {
+            return incomes.Where(income => income != null && income.UserId == this.UserId).ToArray();
+        }
+
+        public decimal GetTotalIncomeByUser()
+        {
+            return incomes.Where(income => income != null && income.UserId == this.UserId).Sum(income => income.Amount);
+        }
+
+        private void ViewIncomeHistory()
+        {
+            Console.WriteLine("\nIncome History");
+            Console.WriteLine("---------------");
+
+            if (incomeCount == 0)
+            {
+                Console.WriteLine("No income records found.");
+            }
+            else
+            {
+                Console.WriteLine("Income Records:");
+                foreach (var income in incomes.Take(incomeCount))
+                {
+                    Console.WriteLine($"Source: {income.Source}, Amount: ${income.Amount}, Date: {income.Date.ToShortDateString()}");
+                }
+            }
+        }
+
+        private decimal CalculateTotalIncome()
+        {
+            decimal total = 0;
+            for (int i = 0; i < incomeCount; i++)
+            {
+                total += incomes[i].Amount;
+            }
+            return total;
+        }
+
+        private void IncreaseArraySize()
+        {
+            Income[] newIncomes = new Income[incomes.Length * 2];
+            Array.Copy(incomes, newIncomes, incomes.Length);
+            incomes = newIncomes;
+        }
+
+        private int GetUserChoice(int minChoice, int maxChoice)
+        {
+            int choice;
+            while (true)
+            {
+                Console.Write("Enter your choice: ");
+                if (int.TryParse(Console.ReadLine(), out choice) && choice >= minChoice && choice <= maxChoice)
+                {
+                    return choice;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid input. Please enter a valid choice.");
+                }
+            }
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace project_Csharp_1
+{
+    public class FinancialGoal
+    {
+        public int GoalId { get; set; }
+        public int UserId { get; set; }
+        public string Name { get; set; }
+        public decimal TargetAmount { get; set; }
+        public decimal CurrentAmount { get; set; }
+        public DateTime TargetDate { get; set; }
+        public bool IsCompleted { get; set; }
+
+        public FinancialGoal(int userId, string name, decimal targetAmount, DateTime targetDate)
+        {
+            UserId = userId;
+            Name = name;
+            TargetAmount = targetAmount;
+            CurrentAmount = 0; // Initialize current amount to zero
+            TargetDate = targetDate;
+            IsCompleted = false; // A goal is initially not completed
+        }
+
+        // Method to update the current amount saved towards the goal
+        public void UpdateCurrentAmount(decimal amount)
+        {
+            CurrentAmount += amount;
+            if (CurrentAmount >= TargetAmount)
+            {
+                IsCompleted = true;
+            }
+        }
+    }
+
+
+    public class FinancialGoalManager
+    {
+        private readonly int UserId;
+        private FinancialGoal[] goals;
+        private int goalCount;
+
+        public FinancialGoalManager(int userId)
+        {
+            UserId = userId;
+            goals = new FinancialGoal[10]; // Initial size of 10, can be adjusted
+            goalCount = 0;
+        }
+
+        public void DisplayFinancialGoals()
+        {
+            Console.WriteLine("Financial Goals for User " + UserId);
+            Console.WriteLine("-----------------------------------");
+
+            if (goalCount == 0)
+            {
+                Console.WriteLine("No financial goals set.");
+            }
+            else
+            {
+                Console.WriteLine("Financial Goals:");
+                foreach (var goal in goals.Take(goalCount))
+                {
+                    Console.WriteLine($"Goal ID: {goal.GoalId}, Name: {goal.Name}, Target Amount: ${goal.TargetAmount}, Current Amount: ${goal.CurrentAmount}, Target Date: {goal.TargetDate.ToShortDateString()}, Status: {(goal.IsCompleted ? "Completed" : "In Progress")}");
+                }
+            }
+        }
+
+        public void AddFinancialGoal(string name, decimal targetAmount, DateTime targetDate)
+        {
+            if (goalCount == goals.Length)
+            {
+                IncreaseArraySize();
+            }
+
+            var goal = new FinancialGoal(UserId, name, targetAmount, targetDate)
+            {
+                GoalId = goalCount + 1
+            };
+
+            goals[goalCount++] = goal;
+            Console.WriteLine("Financial goal added successfully.");
+        }
+
+        public void UpdateGoalProgress(int goalId, decimal amount)
+        {
+            var goal = goals.FirstOrDefault(g => g.GoalId == goalId);
+            if (goal != null && !goal.IsCompleted)
+            {
+                goal.UpdateCurrentAmount(amount);
+                Console.WriteLine($"Progress updated for goal '{goal.Name}'. Current amount: ${goal.CurrentAmount}");
+            }
+            else
+            {
+                Console.WriteLine("Goal not found or already completed.");
+            }
+        }
+        public FinancialGoal[] GetFinancialGoalsByUser(int userId)
+        {
+            return goals.Where(goal => goal != null && goal.UserId == userId).ToArray();
+        }
+        private void IncreaseArraySize()
+        {
+            FinancialGoal[] newGoals = new FinancialGoal[goals.Length * 2];
+            Array.Copy(goals, newGoals, goals.Length);
+            goals = newGoals;
+        }
+    }
+
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace project_Csharp_1
+{
+    public class Expense
+    {
+        public int ExpenseId { get; set; }
+        public int UserId { get; set; }
+        public decimal Amount { get; set; }
+        public string Category { get; set; }
+        public DateTime Date { get; set; }
+        public string Notes { get; set; }
+
+        // Simulating a database context using a normal array
+        private static Expense[] expenses = new Expense[10]; // Initial size of 10, can be adjusted
+        private static int count = 0;
+
+        // Add Expense
+        public void AddExpense(int userId, decimal amount, string category, DateTime date, string notes)
+        {
+            if (count == expenses.Length)
+            {
+                IncreaseArraySize();
+            }
+
+            var expense = new Expense
+            {
+                ExpenseId = count + 1,
+                UserId = userId,
+                Amount = amount,
+                Category = category,
+                Date = date,
+                Notes = notes
+            };
+
+            expenses[count] = expense;
+            count++;
+        }
+
+        // Edit Expense
+        public void EditExpense(int expenseId, decimal amount, string category, DateTime date, string notes)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (expenses[i] != null && expenses[i].ExpenseId == expenseId)
+                {
+                    expenses[i].Amount = amount;
+                    expenses[i].Category = category;
+                    expenses[i].Date = date;
+                    expenses[i].Notes = notes;
+                    break;
+                }
+            }
+        }
+
+        // Delete Expense
+        public void DeleteExpense(int expenseId)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (expenses[i] != null && expenses[i].ExpenseId == expenseId)
+                {
+                    expenses[i] = null; // Set the expense to null to 'delete' it
+                    ConsolidateArray(); // Consolidate the array to fill in the null gap
+                    break;
+                }
+            }
+        }
+        public static Expense[] GetExpenseRecordsByUser(int userId)
+        {
+            return expenses.Where(expense => expense != null && expense.UserId == userId).ToArray();
+        }
+        public static decimal GetTotalExpensesByUser(int userId)
+        {
+            return expenses.Where(expense => expense != null && expense.UserId == userId).Sum(expense => expense.Amount);
+        }
+        // Method to increase the size of the array
+        private void IncreaseArraySize()
+        {
+            Expense[] newExpenses = new Expense[expenses.Length * 2];
+            expenses.CopyTo(newExpenses, 0);
+            expenses = newExpenses;
+        }
+
+        public static decimal CalculateTotalExpensesByCategory(string category)
+    {
+        decimal total = 0;
+        for (int i = 0; i < count; i++)
+        {
+            if (expenses[i] != null && expenses[i].Category == category)
+            {
+                total += expenses[i].Amount;
+            }
+        }
+        return total;
+    }
+
+        // Method to consolidate the array after deletion
+        private void ConsolidateArray()
+        {
+            Expense[] newExpenses = new Expense[expenses.Length];
+            int newIndex = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (expenses[i] != null)
+                {
+                    newExpenses[newIndex++] = expenses[i];
+                }
+            }
+            expenses = newExpenses;
+            count = newIndex;
+        }
+    }
+
+}
+using System;
+
+namespace project_Csharp_1
+{
+    public class Dashboard
+    {
+        public int UserId { get; set; }
+        private Expense[] expenses;
+        private int expenseCount;
+
+        public Dashboard(int userId)
+        {
+            this.UserId = userId;
+            this.expenses = new Expense[10]; // Initial size of 10, can be adjusted
+            this.expenseCount = 0;
+        }
+
+        public void DisplayOverview()
+        {
+            Console.WriteLine("Dashboard Overview for User " + UserId);
+            Console.WriteLine("-----------------------------------");
+
+            // Display user's total expenses
+            decimal totalExpenses = CalculateTotalExpenses();
+
+            Console.WriteLine("Total Expenses: $" + totalExpenses);
+
+            // Additional dashboard overview statistics can be added here
+
+            // Display upcoming bill reminders (if applicable)
+            DisplayUpcomingBillReminders();
+        }
+
+        public void DisplayNavigationMenu()
+        {
+            Console.WriteLine("\nNavigation Menu");
+            Console.WriteLine("---------------");
+            Console.WriteLine("1. Add Expense");
+            Console.WriteLine("2. Exit");
+
+            // Handle user input for navigation
+            int choice = GetUserChoice(1, 2);
+
+            switch (choice)
+            {
+                case 1:
+                    AddExpense();
+                    break;
+                case 2:
+                    Console.WriteLine("Exiting Dashboard...");
+                    break;
+            }
+        }
+
+        private void AddExpense()
+        {
+            Console.WriteLine("\nAdd Expense");
+            Console.WriteLine("------------");
+
+            Console.Write("Enter Expense Category: ");
+            string category = Console.ReadLine();
+
+            Console.Write("Enter Expense Amount: $");
+            if (decimal.TryParse(Console.ReadLine(), out decimal amount))
+            {
+                if (expenseCount == expenses.Length)
+                {
+                    IncreaseArraySize();
+                }
+
+                var expense = new Expense
+                {
+                    UserId = UserId,
+                    Amount = amount,
+                    Category = category,
+                    Date = DateTime.Now,
+                    Notes = ""
+                };
+
+                expenses[expenseCount++] = expense;
+                Console.WriteLine("Expense added successfully.");
+            }
+            else
+            {
+                Console.WriteLine("Invalid amount entered. Expense not added.");
+            }
+        }
+
+        private decimal CalculateTotalExpenses()
+        {
+            decimal total = 0;
+            for (int i = 0; i < expenseCount; i++)
+            {
+                total += expenses[i].Amount;
+            }
+            return total;
+        }
+
+        private void DisplayUpcomingBillReminders()
+        {
+            // Implement the logic to display upcoming bill reminders here
+        }
+
+        private void IncreaseArraySize()
+        {
+            Expense[] newExpenses = new Expense[expenses.Length * 2];
+            Array.Copy(expenses, newExpenses, expenses.Length);
+            expenses = newExpenses;
+        }
+
+        private int GetUserChoice(int minChoice, int maxChoice)
+        {
+            int choice;
+            while (true)
+            {
+                Console.Write("Enter your choice: ");
+                if (int.TryParse(Console.ReadLine(), out choice) && choice >= minChoice && choice <= maxChoice)
+                {
+                    return choice;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid input. Please enter a valid choice.");
+                }
+            }
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace project_Csharp_1
+{
+    public class Budget
+    {
+        public int BudgetId { get; set; }
+        public int UserId { get; set; }
+        public decimal Amount { get; set; }
+        public string Category { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+
+        private static Budget[] budgets = new Budget[10];
+        private static int count = 0;
+
+        public Budget(int userId, decimal amount, string category, DateTime startDate, DateTime endDate)
+        {
+            this.UserId = userId;
+            this.Amount = amount;
+            this.Category = category;
+            this.StartDate = startDate;
+            this.EndDate = endDate;
+        }
+
+        public static void AddBudget(Budget budget)
+        {
+            if (count == budgets.Length)
+            {
+                ResizeArray();
+            }
+            budget.BudgetId = count + 1;
+            budgets[count++] = budget;
+        }
+
+        public static void EditBudget(int budgetId, decimal amount, DateTime startDate, DateTime endDate)
+        {
+            var budget = FindBudgetById(budgetId);
+            if (budget != null)
+            {
+                budget.Amount = amount;
+                budget.StartDate = startDate;
+                budget.EndDate = endDate;
+            }
+        }
+
+        public static void DeleteBudget(int budgetId)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (budgets[i] != null && budgets[i].BudgetId == budgetId)
+                {
+                    budgets[i] = null;
+                    ShiftArrayLeft(i);
+                    count--;
+                    break;
+                }
+            }
+        }
+
+        private static void ResizeArray()
+        {
+            Budget[] newArray = new Budget[budgets.Length * 2];
+            Array.Copy(budgets, newArray, budgets.Length);
+            budgets = newArray;
+        }
+
+        private static void ShiftArrayLeft(int startIndex)
+        {
+            for (int i = startIndex; i < count - 1; i++)
+            {
+                budgets[i] = budgets[i + 1];
+            }
+            budgets[count - 1] = null;
+        }
+
+        private static Budget FindBudgetById(int budgetId)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (budgets[i] != null && budgets[i].BudgetId == budgetId)
+                {
+                    return budgets[i];
+                }
+            }
+            return null;
+        }
+
+        // Additional methods to enhance functionality
+        // Get Budgets by User
+        public static Budget[] GetBudgetsByUser(int userId)
+        {
+            Budget[] userBudgets = new Budget[count];
+            int index = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (budgets[i] != null && budgets[i].UserId == userId)
+                {
+                    userBudgets[index++] = budgets[i];
+                }
+            }
+            return userBudgets;
+        }
+
+        // Calculate Remaining Budget
+        public static decimal CalculateRemainingBudget(int budgetId)
+        {
+            var budget = FindBudgetById(budgetId);
+            if (budget != null)
+            {
+                decimal totalExpenses = Expense.CalculateTotalExpensesByCategory(budget.Category);
+                return budget.Amount - totalExpenses;
+            }
+            return 0;
+        }
+
+        // Check if Budget is Over
+        public static bool IsBudgetOver(int budgetId)
+        {
+            var budget = FindBudgetById(budgetId);
+            if (budget != null)
+            {
+                return CalculateRemainingBudget(budgetId) < 0;
+            }
+            return false;
+        }
+
+        // Export Budget Data (Example for CSV format)
+        public static string ExportBudgetsToCSV()
+        {
+            StringBuilder csv = new StringBuilder();
+            csv.AppendLine("BudgetId,UserId,Amount,Category,StartDate,EndDate");
+            for (int i = 0; i < count; i++)
+            {
+                if (budgets[i] != null)
+                {
+                    var line = $"{budgets[i].BudgetId},{budgets[i].UserId},{budgets[i].Amount},\"{budgets[i].Category}\",{budgets[i].StartDate.ToShortDateString()},{budgets[i].EndDate.ToShortDateString()}";
+                    csv.AppendLine(line);
+                }
+            }
+            return csv.ToString();
+        }
+
+        // Additional functionalities and helper methods can be added as needed...
+    }
+
+
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+
+
+    namespace project_Csharp_1
+    {
+        public class BillReminder
+        {
+            public int BillReminderId { get; set; }
+            public int UserId { get; set; }
+            public string BillName { get; set; }
+            public decimal Amount { get; set; }
+            public DateTime DueDate { get; set; }
+            public bool IsPaid { get; set; }
+
+            public BillReminder(int userId, string billName, decimal amount, DateTime dueDate)
+            {
+                UserId = userId;
+                BillName = billName;
+                Amount = amount;
+                DueDate = dueDate;
+                IsPaid = false; // Default to unpaid
+            }
+        }
+    }
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace project_Csharp_1
+{
+   
+
+    public class GoalBasedSavings
+    {
+        public string GoalName { get; private set; }
+        public decimal TargetAmount { get; private set; }
+        public DateTime TargetDate { get; private set; }
+        public decimal MonthlyContribution { get; private set; }
+        public decimal TotalSaved { get; private set; }
+        public bool IsGoalReached => TotalSaved >= TargetAmount;
+
+        public GoalBasedSavings(string goalName, decimal targetAmount, DateTime targetDate)
+        {
+            GoalName = goalName;
+            TargetAmount = targetAmount;
+            TargetDate = targetDate;
+            CalculateMonthlyContribution();
+            TotalSaved = 0;
+        }
+
+        public void CalculateMonthlyContribution()
+        {
+            var now = DateTime.Now;
+
+            // Calculate the total number of months between the target date and now
+            int months = ((TargetDate.Year - now.Year) * 12) + TargetDate.Month - now.Month;
+
+            // Ensure at least one month for calculation
+            months = Math.Max(months, 1);
+
+            MonthlyContribution = TargetAmount / months;
+        }
+
+
+        public void UpdateGoal(string newGoalName, decimal newTargetAmount, DateTime newTargetDate)
+        {
+            GoalName = newGoalName;
+            TargetAmount = newTargetAmount;
+            TargetDate = newTargetDate;
+            CalculateMonthlyContribution();
+        }
+
+        public void AddContribution(decimal amount)
+        {
+            TotalSaved += amount;
+            if (IsGoalReached)
+            {
+                OnGoalReached();
+            }
+        }
+
+        public void OnGoalReached()
+        {
+            Console.WriteLine($"Congratulations! You have reached your saving goal: {GoalName}.");
+            // Additional logic for goal completion
+        }
+
+        public decimal GetRemainingAmount()
+        {
+            return TargetAmount - TotalSaved;
+        }
+
+        public void DisplayProgress()
+        {
+            decimal progressPercentage = (TotalSaved / TargetAmount) * 100;
+            Console.WriteLine($"Goal: {GoalName}, Progress: {progressPercentage}%");
+        }
+
+        // Additional methods can be added as needed
+    }
+
+}
+using System;
+using System.Collections.Generic;
+
+public class NetWorthCalculator
+{
+    private Dictionary<string, decimal> Assets;
+    private Dictionary<string, decimal> Liabilities;
+
+    public decimal TotalAssets => CalculateTotal(Assets);
+    public decimal TotalLiabilities => CalculateTotal(Liabilities);
+    public decimal NetWorth => TotalAssets - TotalLiabilities;
+
+    public NetWorthCalculator()
+    {
+        Assets = new Dictionary<string, decimal>();
+        Liabilities = new Dictionary<string, decimal>();
+    }
+
+    public void AddAsset(string assetName, decimal value)
+    {
+        if (value <= 0)
+        {
+            throw new ArgumentException("Asset value must be positive.");
+        }
+
+        Assets[assetName] = value;
+    }
+
+    public void AddLiability(string liabilityName, decimal value)
+    {
+        if (value <= 0)
+        {
+            throw new ArgumentException("Liability value must be positive.");
+        }
+
+        Liabilities[liabilityName] = value;
+    }
+
+    public void RemoveAsset(string assetName)
+    {
+        if (!Assets.Remove(assetName))
+        {
+            Console.WriteLine($"Asset '{assetName}' not found.");
+        }
+    }
+
+    public void RemoveLiability(string liabilityName)
+    {
+        if (!Liabilities.Remove(liabilityName))
+        {
+            Console.WriteLine($"Liability '{liabilityName}' not found.");
+        }
+    }
+
+    public void UpdateAssetValue(string assetName, decimal newValue)
+    {
+        if (!Assets.ContainsKey(assetName))
+        {
+            Console.WriteLine($"Asset '{assetName}' not found.");
+            return;
+        }
+
+        Assets[assetName] = newValue;
+    }
+
+    public void UpdateLiabilityValue(string liabilityName, decimal newValue)
+    {
+        if (!Liabilities.ContainsKey(liabilityName))
+        {
+            Console.WriteLine($"Liability '{liabilityName}' not found.");
+            return;
+        }
+
+        Liabilities[liabilityName] = newValue;
+    }
+
+    private decimal CalculateTotal(Dictionary<string, decimal> financialItems)
+    {
+        decimal total = 0;
+        foreach (var item in financialItems)
+        {
+            total += item.Value;
+        }
+        return total;
+    }
+
+    public void DisplayNetWorthSummary()
+    {
+        Console.WriteLine($"Total Assets: {TotalAssets}");
+        Console.WriteLine($"Total Liabilities: {TotalLiabilities}");
+        Console.WriteLine($"Net Worth: {NetWorth}");
+    }
+
+    // Additional methods as needed for detailed tracking and analysis
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace project_Csharp_1
+{
+    using System;
+
+    public class BorrowingEvent
+    {
+        public string LenderName { get; private set; }
+        public decimal AmountBorrowed { get; private set; }
+        public DateTime BorrowDate { get; private set; }
+        public DateTime? PaymentDate { get; private set; } // Nullable to handle unpaid debts
+
+        public BorrowingEvent(string lenderName, decimal amountBorrowed, DateTime borrowDate)
+        {
+            LenderName = lenderName;
+            AmountBorrowed = amountBorrowed;
+            BorrowDate = borrowDate;
+            PaymentDate = null;
+        }
+
+        public void RecordPayment(DateTime paymentDate)
+        {
+            PaymentDate = paymentDate;
+        }
+    }
+
+    public class DebtTracker
+    {
+        private BorrowingEvent[] Borrowings;
+        private int borrowingsCount;
+
+        public DebtTracker(int maxBorrowingEvents)
+        {
+            Borrowings = new BorrowingEvent[maxBorrowingEvents];
+            borrowingsCount = 0;
+        }
+
+        public void AddBorrowing(string lenderName, decimal amount, DateTime borrowDate)
+        {
+            if (borrowingsCount >= Borrowings.Length)
+            {
+                throw new InvalidOperationException("Maximum borrowing events reached");
+            }
+
+            Borrowings[borrowingsCount] = new BorrowingEvent(lenderName, amount, borrowDate);
+            borrowingsCount++;
+        }
+
+        public void RecordPayment(int borrowingIndex, DateTime paymentDate)
+        {
+            if (borrowingIndex < 0 || borrowingIndex >= borrowingsCount)
+            {
+                throw new ArgumentOutOfRangeException("Invalid borrowing index");
+            }
+
+            Borrowings[borrowingIndex].RecordPayment(paymentDate);
+        }
+
+        // Additional methods as needed, e.g., to list all borrowings, list unpaid debts, etc.
+    }
+
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public class ExpenseAnalysis
+{
+    public Dictionary<string, decimal> Expenses { get; private set; }
+
+    public ExpenseAnalysis()
+    {
+        Expenses = new Dictionary<string, decimal>();
+    }
+
+    public void AddExpense(string category, decimal amount)
+    {
+        if (string.IsNullOrWhiteSpace(category))
+        {
+            throw new ArgumentException("Category cannot be null or whitespace.");
+        }
+
+        if (amount <= 0)
+        {
+            throw new ArgumentException("Amount must be positive.");
+        }
+
+        if (Expenses.ContainsKey(category))
+        {
+            Expenses[category] += amount;
+        }
+        else
+        {
+            Expenses.Add(category, amount);
+        }
+    }
+
+    public void AnalyzeSpendingPatterns()
+    {
+        if (!Expenses.Any())
+        {
+            Console.WriteLine("No expenses recorded.");
+            return;
+        }
+
+        foreach (var entry in Expenses)
+        {
+            Console.WriteLine($"Category: {entry.Key}, Amount: {entry.Value}");
+        }
+
+        // Example: Identifying the category with the highest expense
+        var maxExpenseCategory = Expenses.OrderByDescending(entry => entry.Value).First();
+        Console.WriteLine($"Highest Expense: {maxExpenseCategory.Key} - {maxExpenseCategory.Value}");
+    }
+
+    // Additional methods for detailed expense tracking and trend identification
+}
+
